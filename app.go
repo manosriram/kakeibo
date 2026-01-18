@@ -17,8 +17,6 @@ import (
 	"github.com/manosriram/kakeibo/internal/utils"
 	"github.com/manosriram/kakeibo/sqlc/db"
 
-	// db "github.com/manosriram/kakeibo/sqlc/db"
-
 	_ "embed"
 
 	_ "modernc.org/sqlite"
@@ -60,18 +58,19 @@ func main() {
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"formatDate": utils.FormatDateTime,
 	})
-	tmpl, err := tmpl.ParseGlob("templates/*.html")
+
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Error getting wd")
+	}
+
+	tmpl, err = tmpl.ParseGlob(wd + "/templates/*.html")
 	if err != nil {
 		panic(err)
 	}
 
 	e.Renderer = &Template{
 		templates: tmpl,
-	}
-
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Error getting wd")
 	}
 
 	q, err := InitDB(wd + "/kakeibo.db")
