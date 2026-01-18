@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -55,12 +56,44 @@ func CreateStatement(d *db.Queries, description string) error {
 
 func HomeHandler(c echo.Context) error {
 	db := c.Get("db").(*db.Queries)
-	txns, err := db.GetAllStatements(context.Background())
+	page := c.QueryParam("page")
+	if page == "" {
+		page = "1"
+	}
+	p, _ := strconv.Atoi(page)
+
+	// offset = (page_number - 1) * page_size
+	offset := (p - 1) * 10
+
+	count, err := db.GetStatementsCount(context.Background())
 	if err != nil {
+		return err
 	}
 
+	next := p
+	if int64(p+1) <= count {
+		next = p + 1
+	}
+
+	prev := 0
+	if p-1 >= 0 && int64(p-1) < count {
+		prev = p - 1
+	}
+
+	txns, err := db.GetAllStatementsPaginated(context.Background(), int64(offset))
+	if err != nil {
+		return err
+	}
+
+	totalPages := count / 2
+
 	return c.Render(http.StatusOK, "index.html", map[string]any{
-		"statements": txns,
+		"statements":   txns,
+		"page":         p,
+		"pageCount":    totalPages,
+		"next":         next,
+		"prev":         prev,
+		"totalEntries": count,
 	})
 }
 
