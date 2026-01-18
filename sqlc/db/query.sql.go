@@ -100,3 +100,38 @@ func (q *Queries) GetStatementsByTag(ctx context.Context, tag sql.NullString) ([
 	}
 	return items, nil
 }
+
+const getStatementsLimit = `-- name: GetStatementsLimit :many
+SELECT id, txn_type, amount, tag, description, created_at, updated_at FROM STATEMENTS LIMIT ?
+`
+
+func (q *Queries) GetStatementsLimit(ctx context.Context, limit int64) ([]Statement, error) {
+	rows, err := q.db.QueryContext(ctx, getStatementsLimit, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Statement
+	for rows.Next() {
+		var i Statement
+		if err := rows.Scan(
+			&i.ID,
+			&i.TxnType,
+			&i.Amount,
+			&i.Tag,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

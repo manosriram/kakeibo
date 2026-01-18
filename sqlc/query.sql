@@ -6,3 +6,6 @@ SELECT * FROM STATEMENTS WHERE TAG = ?;
 
 -- name: GetAllStatements :many
 SELECT * FROM STATEMENTS;
+
+-- name: GetStatementsLimit :many
+SELECT * FROM STATEMENTS LIMIT ?;

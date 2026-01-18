@@ -2,13 +2,16 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/manosriram/kakeibo/internal/handlers"
+	"github.com/manosriram/kakeibo/internal/utils"
 	"github.com/manosriram/kakeibo/sqlc/db"
 )
 
@@ -20,6 +23,33 @@ func NewTelegramBot(d *db.Queries) TelegramBot {
 	return TelegramBot{
 		DB: d,
 	}
+}
+
+func (t *TelegramBot) HandleLatestStatements(ctx context.Context, b *bot.Bot, update *models.Update) {
+	var s []string
+
+	messageSplits := strings.Split(update.Message.Text, " ")
+	var limit int64
+	if len(messageSplits) > 1 {
+		ll, err := strconv.Atoi(messageSplits[1])
+		if err != nil {
+			return
+		}
+		limit = int64(ll)
+	} else {
+		limit = 5
+	}
+
+	statements, _ := t.DB.GetStatementsLimit(context.Background(), limit)
+	for _, statement := range statements {
+		statementLabel := fmt.Sprintf("%v on %v - %v", statement.Amount.Int64, utils.FormatDateTime(statement.CreatedAt.Time), statement.Tag.String)
+		s = append(s, statementLabel)
+	}
+
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   strings.Join(s, "\n"),
+	})
 }
 
 func (t *TelegramBot) HandleMessage(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -57,6 +87,7 @@ func StartTelegramBot(d *db.Queries) {
 
 	t := NewTelegramBot(d)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/track", bot.MatchTypePrefix, t.HandleMessage)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/latest", bot.MatchTypePrefix, t.HandleLatestStatements)
 
 	b.Start(ctx)
 }
