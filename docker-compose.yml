@@ -9,6 +9,3 @@ services:
       - PORT=8080
     volumes:
       - ./:/app
-      - /app/tmp
-    networks:
-      - echo-network
