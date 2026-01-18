@@ -14,6 +14,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/manosriram/kakeibo/internal/bot"
 	"github.com/manosriram/kakeibo/internal/handlers"
 	"github.com/manosriram/kakeibo/sqlc/db"
 
@@ -35,7 +36,7 @@ func (t *Template) Render(w io.Writer, name string, data any, c echo.Context) er
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-func initDB(path string) (*db.Queries, error) {
+func InitDB(path string) (*db.Queries, error) {
 	conn, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
@@ -114,12 +115,14 @@ func main() {
 		log.Fatalf("Error getting wd")
 	}
 
-	q, err := initDB(wd + "/kakeibo.db")
+	q, err := InitDB(wd + "/kakeibo.db")
 	if err != nil {
 		log.Fatalf("Error starting sqlite db")
 	}
 
 	e.Use(InjectDb(q))
+
+	go bot.StartTelegramBot(q)
 
 	// Middleware
 	e.Use(middleware.RequestLogger()) // use the default RequestLogger middleware with slog logger

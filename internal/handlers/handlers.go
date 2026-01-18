@@ -14,6 +14,16 @@ type CreateTxn struct {
 	Description string `json:"description"`
 }
 
+func CreateStatement(d *db.Queries, description string) error {
+	err := d.CreateStatement(context.Background(), db.CreateStatementParams{
+		TxnType:     sql.NullString{String: "online", Valid: true},
+		Amount:      sql.NullInt64{Int64: 1000, Valid: true},
+		Tag:         sql.NullString{String: "food", Valid: true},
+		Description: sql.NullString{String: description, Valid: true},
+	})
+	return err
+}
+
 func HomeHandler(c echo.Context) error {
 	db := c.Get("db").(*db.Queries)
 	txns, err := db.GetAllStatements(context.Background())
@@ -27,6 +37,7 @@ func HomeHandler(c echo.Context) error {
 
 func CreateTransactionAPI(c echo.Context) error {
 	d := c.Get("db").(*db.Queries)
+
 	txn := new(CreateTxn)
 	if err := c.Bind(txn); err != nil {
 		fmt.Println(err)
@@ -34,13 +45,7 @@ func CreateTransactionAPI(c echo.Context) error {
 	// txnType := c.FormValue("")
 	// amount := c.FormValue("")
 	// tag := c.FormValue("")
-
-	err := d.CreateStatement(context.Background(), db.CreateStatementParams{
-		TxnType:     sql.NullString{String: "online", Valid: true},
-		Amount:      sql.NullInt64{Int64: 1000, Valid: true},
-		Tag:         sql.NullString{String: "food", Valid: true},
-		Description: sql.NullString{String: txn.Description, Valid: true},
-	})
+	err := CreateStatement(d, txn.Description)
 	if err != nil {
 		fmt.Println("err = ", err.Error())
 	}
