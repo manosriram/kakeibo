@@ -1,0 +1,18 @@
+# Dependency directories
+vendor/
+
+# Test results
+test/
+
+# Binary output
+bin/
+*.test
+
+# IDE/Editor files
+.idea/
+.vscode/
+
+# Docker files themselves
+.dockerignore
+Dockerfile
+docker-compose.yml
