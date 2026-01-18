@@ -42,13 +42,12 @@ func (o OpenAI) Call() (string, error) {
 		return "", err
 	}
 	prompt = fmt.Sprintf(prompt, o.ExpenseDescription)
-	fmt.Println("sending ", prompt)
 
 	chatCompletion, err := client.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage(prompt),
 		},
-		Model: openai.ChatModelGPT4o,
+		Model: openai.ChatModelGPT5_2,
 	})
 	if err != nil {
 		panic(err.Error())
