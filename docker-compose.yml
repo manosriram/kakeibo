@@ -8,4 +8,4 @@ services:
     environment:
       - PORT=8080
     volumes:
-      - ./:/app
+      - ./:/root
