@@ -18,6 +18,12 @@
             padding: 10px;
             margin-bottom: 20px;
         }
+
+				.btn:hover {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border-color: #000000 !important;
+        }
         
         /* Fixed hover visibility */
         .txn-row:hover { 
@@ -65,7 +71,7 @@
                     <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end;">
                         <div style="flex-grow: 1;">
                             <label for="naturalInput">Input Command:</label>
-                            <input id="naturalInput" type="text" placeholder="Coffee 5.50 Food" required autocomplete="off">
+                            <input id="naturalInput" type="text" placeholder="Spent 3000 on coffee" required autocomplete="off">
                         </div>
                         <button class="btn btn-primary" type="submit" id="btnText">EXECUTE</button>
                     </div>
@@ -135,7 +141,7 @@
             </table>
         </section>
 
-        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
             <div class="btn-group">
                 <button class="btn btn-default btn-ghost" id="prevBtn">PREV</button>
                 <button class="btn btn-default btn-ghost" id="nextBtn" {{ if not .hasNextPage }}disabled{{ end }}>NEXT</button>
