@@ -32,7 +32,7 @@ services:
 ## Usage
 
 kakiebo supports query via bots:
-    1. Telegram
+  1. Telegram
 
 ## Steps to use telegram bot
 1. Set TELEGRAM_BOT_ID in .env
