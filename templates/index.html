@@ -105,6 +105,7 @@
     </div>
 
     <script>
+				const host = window.location.host;
         lucide.createIcons();
 
         const form = document.getElementById('kakeiboForm');
@@ -130,7 +131,7 @@
             try {
                 // 3. API Submission (Replace URL with your real endpoint)
                 // const response = await fetch('https://api.example.com/transactions', {
-                const response = await fetch('http://localhost:8080/api/transaction', {
+                const response = await fetch('/api/transaction', {
                     method: 'POST',
 										headers: {
 											'Content-Type': 'application/json'  // Add this!
@@ -197,11 +198,11 @@
 				const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
 				prevBtn.addEventListener('click', () => {
-					window.location.href = "http://localhost:8080/?page={{.prev}}"
+					window.location.href = host + "/?page={{.prev}}"
         });
 
         nextBtn.addEventListener('click', () => {
-					window.location.href = "http://localhost:8080/?page={{.next}}"
+					window.location.href = host + "/?page={{.next}}"
         });
     </script>
 </body>
