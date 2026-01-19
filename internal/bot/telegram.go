@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/manosriram/kakeibo/internal/handlers"
-	"github.com/manosriram/kakeibo/internal/utils"
 	"github.com/manosriram/kakeibo/sqlc/db"
 )
 
@@ -27,24 +25,27 @@ func NewTelegramBot(d *db.Queries) TelegramBot {
 
 func (t *TelegramBot) HandleLatestStatements(ctx context.Context, b *bot.Bot, update *models.Update) {
 	var s []string
+	statementsByTag, _ := t.DB.GetStatementsByCategory(context.Background())
 
-	messageSplits := strings.Split(update.Message.Text, " ")
-	var limit int64
-	if len(messageSplits) > 1 {
-		ll, err := strconv.Atoi(messageSplits[1])
-		if err != nil {
-			return
+	cr, _ := t.DB.GetCurrentMonthCredit(context.Background())
+	credit := cr.Float64
+
+	de, _ := t.DB.GetCurrentMonthDebit(context.Background())
+	debit := de.Float64
+
+	output := "Expense Summary for this month:\n"
+	s = append(s, output)
+
+	for _, x := range statementsByTag {
+		if x.TxnType.String == "credit" {
+			s = append(s, fmt.Sprintf("INR +%v for %s", x.Sum.Float64, x.Tag.String))
+		} else {
+			s = append(s, fmt.Sprintf("INR -%v for %s", x.Sum.Float64, x.Tag.String))
 		}
-		limit = int64(ll)
-	} else {
-		limit = 5
 	}
-
-	statements, _ := t.DB.GetStatementsLimit(context.Background(), limit)
-	for _, statement := range statements {
-		statementLabel := fmt.Sprintf("%v on %v - %v", statement.Amount.Int64, utils.FormatDateTime(statement.CreatedAt.Time), statement.Tag.String)
-		s = append(s, statementLabel)
-	}
+	s = append(s, "-------------------------------------")
+	s = append(s, fmt.Sprintf("Credit: INR %v", credit))
+	s = append(s, fmt.Sprintf("Debit: INR %v", debit))
 
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,

@@ -12,6 +12,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/manosriram/kakeibo/internal/bot"
 	"github.com/manosriram/kakeibo/internal/handlers"
 	"github.com/manosriram/kakeibo/internal/utils"
 	"github.com/manosriram/kakeibo/sqlc/db"
@@ -79,7 +80,7 @@ func main() {
 
 	e.Use(InjectDb(q))
 
-	// go bot.StartTelegramBot(q)
+	go bot.StartTelegramBot(q)
 
 	// Middleware
 	e.Use(middleware.RequestLogger()) // use the default RequestLogger middleware with slog logger

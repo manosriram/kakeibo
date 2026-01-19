@@ -147,12 +147,13 @@ func (q *Queries) GetCurrentMonthDebit(ctx context.Context) (sql.NullFloat64, er
 }
 
 const getStatementsByCategory = `-- name: GetStatementsByCategory :many
-SELECT SUM(AMOUNT), TAG FROM STATEMENTS GROUP BY TAG
+SELECT SUM(AMOUNT), TAG, TXN_TYPE FROM STATEMENTS GROUP BY TAG ORDER BY SUM(AMOUNT) DESC
 `
 
 type GetStatementsByCategoryRow struct {
-	Sum sql.NullFloat64
-	Tag sql.NullString
+	Sum     sql.NullFloat64
+	Tag     sql.NullString
+	TxnType sql.NullString
 }
 
 func (q *Queries) GetStatementsByCategory(ctx context.Context) ([]GetStatementsByCategoryRow, error) {
@@ -164,7 +165,7 @@ func (q *Queries) GetStatementsByCategory(ctx context.Context) ([]GetStatementsB
 	var items []GetStatementsByCategoryRow
 	for rows.Next() {
 		var i GetStatementsByCategoryRow
-		if err := rows.Scan(&i.Sum, &i.Tag); err != nil {
+		if err := rows.Scan(&i.Sum, &i.Tag, &i.TxnType); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -87,13 +87,6 @@ func HomeHandler(c echo.Context) error {
 
 	totalPages := count / 2
 
-	/* Calculate metadata
-	1. Credit this month
-	2. Debit this month
-	3. Savings %
-	4. Expense of each category
-	*/
-
 	cr, err := db.GetCurrentMonthCredit(context.Background())
 	credit := cr.Float64
 
@@ -101,7 +94,12 @@ func HomeHandler(c echo.Context) error {
 	debit := de.Float64
 
 	netSavings := credit - debit
-	savingsPerc := fmt.Sprintf("%.2f", (netSavings/credit)*100)
+	var savingsPerc string
+	if credit == 0 {
+		savingsPerc = "0"
+	} else {
+		savingsPerc = fmt.Sprintf("%.2f", (netSavings/credit)*100)
+	}
 
 	statementsByTag, _ := db.GetStatementsByCategory(context.Background())
 
@@ -117,6 +115,7 @@ func HomeHandler(c echo.Context) error {
 		"savingsPercentage": savingsPerc,
 		"spendByTag":        statementsByTag,
 		"totalEntries":      count,
+		"hasNextPage":       p < int(totalPages)-1,
 	})
 }
 

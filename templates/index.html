@@ -3,178 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kakeibo - Expense Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Kakeibo - Terminal</title>
+    <link rel="stylesheet" href="https://unpkg.com/terminal.css@0.7.2/dist/terminal.min.css" />
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .animate-spin { animation: spin 1s linear infinite; }
+        :root {
+            --global-font-size: 15px;
+            --global-line-height: 1.4;
+        }
+        body { padding: 20px; }
+        .compact-stats {
+            display: flex;
+            justify-content: space-between;
+            border: 1px dashed #666;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        
+        /* Fixed hover visibility */
+        .txn-row:hover { 
+            background-color: var(--secondary-color) !important; 
+        }
+        /* Specifically force white text for all cells (including date) on hover */
+        .txn-row:hover td, 
+        .txn-row:hover td span { 
+            color: #ffffff !important; 
+        }
+
+        .amount-credit { color: #2ecc71; font-weight: bold; }
+        .amount-debit { color: #e74c3c; font-weight: bold; }
+        .tag-badge { 
+            border: 1px solid currentColor; 
+            padding: 0 4px; 
+            font-size: 0.8em; 
+            text-transform: uppercase;
+        }
+        td, th { padding: 8px 10px !important; }
+        #statusMessage { margin-left: 10px; font-weight: bold; }
+        
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 p-4 md:p-6">
-
-    <div class="max-w-6xl mx-auto space-y-4">
-        
-        <!-- Header & Quick Add -->
-        <div class="bg-white rounded-lg shadow-sm p-4 border border-slate-200">
-            <div class="flex items-center justify-between mb-3">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">家計簿 Kakeibo</h1>
-                    <p class="text-xs text-slate-500">Personal Finance Tracker</p>
-                </div>
-                <div id="statusMessage" class="hidden px-3 py-1 rounded text-xs font-semibold"></div>
-            </div>
-            
-            <form id="kakeiboForm" class="flex gap-2">
-                <input 
-                    id="naturalInput"
-                    type="text" 
-                    required
-                    placeholder="e.g., 'Coffee 5.50 Cafe' or 'Salary 2500 Income'" 
-                    class="flex-1 px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    autocomplete="off"
-                >
-                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-semibold text-sm transition flex items-center gap-2">
-                    <span id="btnText">Add</span>
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                </button>
-            </form>
+<body class="terminal">
+    <div class="container">
+        <div class="terminal-nav">
+            <header class="terminal-logo">
+                <div class="logo terminal-prompt"><a href="#">KAKEIBO_V1.0</a></div>
+            </header>
+            <nav class="terminal-menu">
+                <span id="statusMessage"></span>
+            </nav>
         </div>
 
-        <!-- Dashboard Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg shadow-sm p-4 border border-slate-200">
-                <div class="flex items-center gap-2 mb-1">
-                    <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i>
-                    <span class="text-xs font-semibold text-slate-500 uppercase">Credit</span>
-                </div>
-								<p class="text-2xl text-green-600 font-bold">{{ .credit }}</p>
-                <p class="text-xs text-emerald-600 mt-1">+12% this month</p>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-sm p-4 border border-slate-200">
-                <div class="flex items-center gap-2 mb-1">
-                    <i data-lucide="trending-down" class="w-4 h-4 text-red-600"></i>
-                    <span class="text-xs font-semibold text-slate-500 uppercase">Debit</span>
-                </div>
-								<p class="text-2xl text-red-500 font-bold">{{ .debit }}</p>
-                <p class="text-xs text-emerald-600 mt-1">+12% this month</p>
-            </div>
-
-            <!-- <div class="bg-white rounded-lg shadow-sm p-4 border border-slate-200"> -->
-                <!-- <div class="flex items-center gap-2 mb-1"> -->
-                    <!-- <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i> -->
-                    <!-- <span class="text-xs font-semibold text-slate-500 uppercase">Income</span> -->
-                <!-- </div> -->
-                <!-- <p class="text-2xl font-bold text-slate-900">₹45,000</p> -->
-                <!-- <p class="text-xs text-slate-500 mt-1">This month</p> -->
-            <!-- </div> -->
-
-            <div class="bg-white rounded-lg shadow-sm p-4 border border-slate-200">
-                <div class="flex items-center gap-2 mb-1">
-                    <i data-lucide="target" class="w-4 h-4 text-purple-600"></i>
-                    <span class="text-xs font-semibold text-slate-500 uppercase">Savings</span>
-                </div>
-								<p class="text-2xl font-bold text-slate-900">{{ .savings }} ({{.savingsPercentage}}%)</p>
-                <p class="text-xs text-slate-500 mt-1">Savings rate</p>
-            </div>
-        </div>
-
-        <!-- Category Breakdown & Recent Transactions -->
-        <div class="grid md:grid-cols-3 gap-4">
-            
-            <!-- Category Breakdown -->
-            <div class="bg-white rounded-lg shadow-sm p-4 border border-slate-200">
-                <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-4 h-4"></i>
-                    Top Categories
-                </h3>
-                <div class="space-y-3">
-									{{ range .spendByTag }}
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-													<span class="text-xs font-medium text-slate-600">{{ .Tag.String }}</span>
-													<span class="text-xs font-bold text-slate-900">₹{{ .Sum.Float64 }}</span>
+        <section>
+            <form id="kakeiboForm">
+                <fieldset>
+                    <legend>Quick Add Entry</legend>
+                    <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end;">
+                        <div style="flex-grow: 1;">
+                            <label for="naturalInput">Input Command:</label>
+                            <input id="naturalInput" type="text" placeholder="Coffee 5.50 Food" required autocomplete="off">
                         </div>
-                        <!-- <div class="w-full bg-slate-100 rounded-full h-1.5"> -->
-                            <!-- <div class="bg-indigo-600 h-1.5 rounded-full" style="width: 40%"></div> -->
-                        <!-- </div> -->
+                        <button class="btn btn-primary" type="submit" id="btnText">EXECUTE</button>
                     </div>
-									{{ end }}
-                </div>
-            </div>
+                </fieldset>
+            </form>
+        </section>
 
-            <!-- Recent Transactions -->
-            <div class="md:col-span-2 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-4 border-b border-slate-200 flex items-center justify-between">
-                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <i data-lucide="list" class="w-4 h-4"></i>
-                        Recent Transactions
-                    </h3>
-                    <button class="text-xs text-indigo-600 font-semibold hover:text-indigo-700">View All</button>
-                </div>
-                
-                <div class="overflow-auto max-h-64">
-                    <table class="w-full text-sm">
-                        <thead class="bg-slate-50 text-xs text-slate-500 sticky top-0">
-                            <tr>
-                                <th class="px-4 py-2 text-left font-semibold">Description</th>
-                                <th class="px-4 py-2 text-right font-semibold">Amount</th>
-                                <th class="px-4 py-2 text-center font-semibold">Category</th>
-                                <th class="px-4 py-2 text-left font-semibold">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactionBody" class="divide-y divide-slate-100">
-                            {{ if .statements }}
-                                {{ range .statements }}
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-4 py-2 font-medium text-slate-700">{{ .Description.String }}</td>
-                                <td class="px-4 py-2 text-right font-bold {{ if eq .TxnType.String "credit" }}text-emerald-600{{ else }}text-red-600{{ end }}">
-                                    {{ if eq .TxnType.String "credit" }}+{{ else }}-{{ end }}₹{{ .Amount.Int64 }}
-                                </td>
-                                <td class="px-4 py-2 text-center">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">{{ .Tag.String }}</span>
-                                </td>
-                                <td class="px-4 py-2 text-xs text-slate-500">{{ formatDate .CreatedAt.Time }}</td>
-                            </tr>
-                                {{ end }}
-                            {{ end }}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                    <button id="prevBtn" class="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-white hover:text-indigo-600 transition disabled:opacity-30 disabled:cursor-not-allowed">
-                        <i data-lucide="chevron-left" class="w-3 h-3"></i>
-                        Prev
-                    </button>
-                    <span class="text-xs text-slate-500">Page 1</span>
-                    <button id="nextBtn" class="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-white hover:text-indigo-600 transition disabled:opacity-30 disabled:cursor-not-allowed">
-                        Next
-                        <i data-lucide="chevron-right" class="w-3 h-3"></i>
-                    </button>
-                </div>
-            </div>
+        <div class="compact-stats">
+            <div>INCOME: <span class="amount-credit">{{ .credit }}</span></div>
+            <div>EXPENSES: <span class="amount-debit">{{ .debit }}</span></div>
+            <div>SAVINGS: <span>{{ .savings }} ({{.savingsPercentage}}%)</span></div>
         </div>
 
+        <section>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">TRANSACTION_LOG</h3>
+                <div class="filter-container">
+                    <div class="form-group" style="margin: 0;">
+                        <select id="timeFilter">
+                            <option value="all">ALL_TIME</option>
+                            <option value="1">THIS_MONTH</option>
+                            <option value="3">LAST_3_MONTHS</option>
+                            <option value="6">LAST_6_MONTHS</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <select id="categoryFilter">
+                            <option value="">ALL_CATEGORIES</option>
+                            <option value="FOOD">FOOD</option>
+                            <option value="TRANSPORT">TRANSPORT</option>
+                            <option value="SHOPPING">SHOPPING</option>
+                            <option value="UTILITIES">UTILITIES</option>
+                            <option value="INCOME">INCOME</option>
+                            <option value="OTHER">OTHER</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <table class="terminal-table">
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>CATEGORY</th>
+                        <th>DESCRIPTION</th>
+                        <th class="text-right">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionBody">
+                    {{ if .statements }}
+                        {{ range .statements }}
+                    <tr class="txn-row" data-date="{{ .CreatedAt.Time.Format "2006-01-02T15:04:05Z07:00" }}">
+                        <td style="white-space: nowrap;">{{ formatDate .CreatedAt.Time }}</td>
+                        <td><span class="tag-badge">{{ .Tag.String }}</span></td>
+                        <td>{{ .Description.String }}</td>
+                        <td class="text-right {{ if eq .TxnType.String "credit" }}amount-credit{{ else }}amount-debit{{ end }}">
+                            {{ if eq .TxnType.String "credit" }}+{{ else }}-{{ end }}₹{{ .Amount.Int64 }}
+                        </td>
+                    </tr>
+                        {{ end }}
+                    {{ else }}
+                    <tr>
+                        <td colspan="4" style="text-align: center;">NO_DATA_AVAILABLE</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </section>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <div class="btn-group">
+                <button class="btn btn-default btn-ghost" id="prevBtn">PREV</button>
+                <button class="btn btn-default btn-ghost" id="nextBtn" {{ if not .hasNextPage }}disabled{{ end }}>NEXT</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const host = window.location.host;
-        lucide.createIcons();
-
         const form = document.getElementById('kakeiboForm');
-        const btnText = document.getElementById('btnText');
         const statusMsg = document.getElementById('statusMessage');
-        const transactionBody = document.getElementById('transactionBody');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const timeFilter = document.getElementById('timeFilter');
+        const rows = document.querySelectorAll('#transactionBody tr.txn-row');
+
+        // Combined Filter Function
+        function applyFilters() {
+            const catValue = categoryFilter.value.toLowerCase();
+            const timeValue = timeFilter.value;
+            const now = new Date();
+
+            rows.forEach(row => {
+                const rowDate = new Date(row.getAttribute('data-date'));
+                const rowCat = row.querySelector('.tag-badge')?.textContent.toLowerCase() || "";
+                
+                // Category Check
+                const matchesCat = !catValue || rowCat.includes(catValue);
+                
+                // Time Check
+                let matchesTime = true;
+                if (timeValue !== 'all') {
+                    const monthsAgo = new Date();
+                    monthsAgo.setMonth(now.getMonth() - parseInt(timeValue));
+                    
+                    if (timeValue === "1") {
+                        // "This Month" logic: must be same month and year
+                        matchesTime = (rowDate.getMonth() === now.getMonth() && rowDate.getFullYear() === now.getFullYear());
+                    } else {
+                        // "Last X Months" logic: date must be after the calculated threshold
+                        matchesTime = (rowDate >= monthsAgo);
+                    }
+                }
+
+                row.style.display = (matchesCat && matchesTime) ? '' : 'none';
+            });
+        }
+
+        categoryFilter.addEventListener('change', applyFilters);
+        timeFilter.addEventListener('change', applyFilters);
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const rawValue = document.getElementById('naturalInput').value;
-            btnText.innerText = 'Saving...';
+            const btn = document.getElementById('btnText');
+            btn.innerText = 'WAIT...';
 
             try {
                 const response = await fetch('/api/transaction', {
@@ -184,37 +199,21 @@
                 });
 
                 if (response.ok) {
-                    showStatus('Entry saved!', 'success');
+                    statusMsg.innerText = '[SUCCESS]';
+                    statusMsg.style.color = '#2ecc71';
                     form.reset();
-                    setTimeout(() => location.reload(), 800);
-                } else {
-                    throw new Error('Server error');
-                }
+                    setTimeout(() => location.reload(), 600);
+                } else { throw new Error(); }
             } catch (err) {
-                showStatus('Failed to save', 'error');
+                statusMsg.innerText = '[ERROR]';
+                statusMsg.style.color = '#e74c3c';
             } finally {
-                btnText.innerText = 'Add';
+                btn.innerText = 'EXECUTE';
             }
         });
 
-        function showStatus(msg, type) {
-            statusMsg.innerText = msg;
-            statusMsg.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-700', 'bg-red-100', 'text-red-700');
-            statusMsg.classList.add(type === 'success' ? 'bg-emerald-100' : 'bg-red-100');
-            statusMsg.classList.add(type === 'success' ? 'text-emerald-700' : 'text-red-700');
-            setTimeout(() => statusMsg.classList.add('hidden'), 2500);
-        }
-
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        
-        prevBtn.addEventListener('click', () => {
-            window.location.href = host + "/?page={{.prev}}";
-        });
-
-        nextBtn.addEventListener('click', () => {
-            window.location.href = host + "/?page={{.next}}";
-        });
+        document.getElementById('prevBtn').addEventListener('click', () => window.location.href = "/?page={{.prev}}");
+        document.getElementById('nextBtn').addEventListener('click', () => window.location.href = "/?page={{.next}}");
     </script>
 </body>
 </html>
