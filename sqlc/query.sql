@@ -18,3 +18,24 @@ SELECT * FROM STATEMENTS;
 
 -- name: GetStatementsLimit :many
 SELECT * FROM STATEMENTS LIMIT ?;
+
+-- name: GetCurrentMonthBalance :one
+SELECT 
+    SUM(CASE WHEN TXN_TYPE = 'INCOME' THEN AMOUNT ELSE -AMOUNT END) AS monthly_net_balance
+FROM STATEMENTS
+WHERE strftime('%Y-%m', CREATED_AT) = strftime('%Y-%m', 'now');
+
+-- name: GetCurrentMonthCredit :one
+SELECT 
+    SUM(AMOUNT) AS monthly_net_balance
+FROM STATEMENTS
+WHERE strftime('%Y-%m', CREATED_AT) = strftime('%Y-%m', 'now') AND TXN_TYPE = 'credit';
+
+-- name: GetCurrentMonthDebit :one
+SELECT 
+    SUM(AMOUNT) AS monthly_net_balance
+FROM STATEMENTS
+WHERE strftime('%Y-%m', CREATED_AT) = strftime('%Y-%m', 'now') AND TXN_TYPE = 'debit';
+
+-- name: GetStatementsByCategory :many
+SELECT SUM(AMOUNT), TAG FROM STATEMENTS GROUP BY TAG;

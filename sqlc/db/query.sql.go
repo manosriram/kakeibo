@@ -104,6 +104,80 @@ func (q *Queries) GetAllStatementsPaginated(ctx context.Context, offset int64) (
 	return items, nil
 }
 
+const getCurrentMonthBalance = `-- name: GetCurrentMonthBalance :one
+SELECT 
+    SUM(CASE WHEN TXN_TYPE = 'INCOME' THEN AMOUNT ELSE -AMOUNT END) AS monthly_net_balance
+FROM STATEMENTS
+WHERE strftime('%Y-%m', CREATED_AT) = strftime('%Y-%m', 'now')
+`
+
+func (q *Queries) GetCurrentMonthBalance(ctx context.Context) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, getCurrentMonthBalance)
+	var monthly_net_balance sql.NullFloat64
+	err := row.Scan(&monthly_net_balance)
+	return monthly_net_balance, err
+}
+
+const getCurrentMonthCredit = `-- name: GetCurrentMonthCredit :one
+SELECT 
+    SUM(AMOUNT) AS monthly_net_balance
+FROM STATEMENTS
+WHERE strftime('%Y-%m', CREATED_AT) = strftime('%Y-%m', 'now') AND TXN_TYPE = 'credit'
+`
+
+func (q *Queries) GetCurrentMonthCredit(ctx context.Context) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, getCurrentMonthCredit)
+	var monthly_net_balance sql.NullFloat64
+	err := row.Scan(&monthly_net_balance)
+	return monthly_net_balance, err
+}
+
+const getCurrentMonthDebit = `-- name: GetCurrentMonthDebit :one
+SELECT 
+    SUM(AMOUNT) AS monthly_net_balance
+FROM STATEMENTS
+WHERE strftime('%Y-%m', CREATED_AT) = strftime('%Y-%m', 'now') AND TXN_TYPE = 'debit'
+`
+
+func (q *Queries) GetCurrentMonthDebit(ctx context.Context) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, getCurrentMonthDebit)
+	var monthly_net_balance sql.NullFloat64
+	err := row.Scan(&monthly_net_balance)
+	return monthly_net_balance, err
+}
+
+const getStatementsByCategory = `-- name: GetStatementsByCategory :many
+SELECT SUM(AMOUNT), TAG FROM STATEMENTS GROUP BY TAG
+`
+
+type GetStatementsByCategoryRow struct {
+	Sum sql.NullFloat64
+	Tag sql.NullString
+}
+
+func (q *Queries) GetStatementsByCategory(ctx context.Context) ([]GetStatementsByCategoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, getStatementsByCategory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetStatementsByCategoryRow
+	for rows.Next() {
+		var i GetStatementsByCategoryRow
+		if err := rows.Scan(&i.Sum, &i.Tag); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getStatementsByTag = `-- name: GetStatementsByTag :many
 SELECT id, txn_type, amount, tag, description, created_at, updated_at FROM STATEMENTS WHERE TAG = ?
 `

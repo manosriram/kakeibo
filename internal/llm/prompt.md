@@ -4,7 +4,8 @@ parse the text and return the output in this format only:
 [{
     "tag": "food",
     "amount": 1000,
-    "description": ...
+    "description": ...,
+    "txn_type": "credit" or "debit"
 },...]
 
 Always return a list of objects like above, if there are multiple items in description, do the same and

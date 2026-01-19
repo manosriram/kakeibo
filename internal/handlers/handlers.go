@@ -15,9 +15,10 @@ import (
 )
 
 type StatementFromLLM struct {
-	Tag         string `json:"tag"`
-	Amount      int64  `json:"amount"`
-	Description string `json:"description"`
+	Tag             string `json:"tag"`
+	Amount          int64  `json:"amount"`
+	Description     string `json:"description"`
+	TransactionType string `json:"txn_type"`
 }
 
 type CreateTxn struct {
@@ -29,7 +30,6 @@ func CreateStatement(d *db.Queries, description string) error {
 	if err != nil {
 		fmt.Println("error calling openai ", err)
 	} else {
-		// fmt.Println("res = ", result)
 	}
 
 	result = strings.TrimLeft(result, "```json")
@@ -41,7 +41,7 @@ func CreateStatement(d *db.Queries, description string) error {
 
 	for _, statement := range statements {
 		err = d.CreateStatement(context.Background(), db.CreateStatementParams{
-			// TxnType:     sql.NullString{String: "online", Valid: true},
+			TxnType:     sql.NullString{String: statement.TransactionType, Valid: true},
 			Amount:      sql.NullInt64{Int64: statement.Amount, Valid: true},
 			Tag:         sql.NullString{String: statement.Tag, Valid: true},
 			Description: sql.NullString{String: statement.Description, Valid: true},
@@ -87,13 +87,36 @@ func HomeHandler(c echo.Context) error {
 
 	totalPages := count / 2
 
+	/* Calculate metadata
+	1. Credit this month
+	2. Debit this month
+	3. Savings %
+	4. Expense of each category
+	*/
+
+	cr, err := db.GetCurrentMonthCredit(context.Background())
+	credit := cr.Float64
+
+	de, err := db.GetCurrentMonthDebit(context.Background())
+	debit := de.Float64
+
+	netSavings := credit - debit
+	savingsPerc := fmt.Sprintf("%.2f", (netSavings/credit)*100)
+
+	statementsByTag, _ := db.GetStatementsByCategory(context.Background())
+
 	return c.Render(http.StatusOK, "index.html", map[string]any{
-		"statements":   txns,
-		"page":         p,
-		"pageCount":    totalPages,
-		"next":         next,
-		"prev":         prev,
-		"totalEntries": count,
+		"statements":        txns,
+		"page":              p,
+		"pageCount":         totalPages,
+		"next":              next,
+		"prev":              prev,
+		"credit":            credit,
+		"debit":             debit,
+		"savings":           netSavings,
+		"savingsPercentage": savingsPerc,
+		"spendByTag":        statementsByTag,
+		"totalEntries":      count,
 	})
 }
 
