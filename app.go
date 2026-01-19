@@ -73,7 +73,7 @@ func main() {
 		templates: tmpl,
 	}
 
-	q, err := InitDB(wd + "/kakeibo.db")
+	q, err := InitDB("/app/data/kakeibo.db")
 	if err != nil {
 		log.Fatalf("Error starting sqlite db")
 	}

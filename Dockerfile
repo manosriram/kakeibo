@@ -32,6 +32,8 @@ COPY --from=builder /app/main .
 
 COPY . .
 
+RUN mkdir -p /app/data
+
 # Expose port
 EXPOSE 8080
 
