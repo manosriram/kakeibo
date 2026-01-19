@@ -54,6 +54,7 @@ func InjectDb(db *db.Queries) echo.MiddlewareFunc {
 
 func main() {
 	e := echo.New()
+	e.Static("/", "static")
 
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"formatDate": utils.FormatDateTime,
