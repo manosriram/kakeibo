@@ -141,7 +141,8 @@
                     {{ if .statements }}
                         {{ range .statements }}
                     <tr class="txn-row" data-date="{{ .CreatedAt.Time.Format "2006-01-02T15:04:05Z07:00" }}">
-                        <td style="white-space: nowrap;">{{ formatDate .CreatedAt.Time }}</td>
+                        <!-- <td style="white-space: nowrap;">{{ formatDate .CreatedAt.Time }}</td> -->
+                        <td id="tstamp" style="white-space: nowrap;">{{ .CreatedAt.Time }}</td>
                         <td><span class="tag-badge">{{ .Tag.String }}</span></td>
                         <td>{{ .Description.String }}</td>
                         <td class="text-right {{ if eq .TxnType.String "credit" }}amount-credit{{ else }}amount-debit{{ end }}">
@@ -167,6 +168,25 @@
     </div>
 
     <script>
+				const timestampsEl = document.querySelectorAll('#tstamp');
+				for (const timestampEl of timestampsEl) {
+
+					const utcTime = timestampEl.textContent.trim();
+					const date = new Date(utcTime);
+
+					const options = {
+						year: 'numeric',
+						month: 'short',
+						day: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit',
+						second: '2-digit',
+						hour12: true
+					};
+
+					timestampEl.textContent = date.toLocaleString('en-US', options);
+				}
+
         const form = document.getElementById('kakeiboForm');
         const statusMsg = document.getElementById('statusMessage');
         const categoryFilter = document.getElementById('categoryFilter');
