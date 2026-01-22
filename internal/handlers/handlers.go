@@ -11,6 +11,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/manosriram/kakeibo/internal/llm"
+	"github.com/manosriram/kakeibo/internal/vectordb"
 	"github.com/manosriram/kakeibo/sqlc/db"
 )
 
@@ -25,8 +26,8 @@ type CreateTxn struct {
 	Description string `json:"description"`
 }
 
-func CreateStatement(d *db.Queries, description string) error {
-	result, err := llm.NewOpenAI(description).Call()
+func CreateStatement(d *db.Queries, qdrantClient *vectordb.QdrantVectorDB, description string) error {
+	result, err := llm.NewOpenAI().Call(description)
 	if err != nil {
 		fmt.Println("error calling openai ", err)
 	} else {
@@ -40,7 +41,7 @@ func CreateStatement(d *db.Queries, description string) error {
 	fmt.Println("statements = ", statements)
 
 	for _, statement := range statements {
-		err = d.CreateStatement(context.Background(), db.CreateStatementParams{
+		stmt, err := d.CreateStatement(context.Background(), db.CreateStatementParams{
 			TxnType:     sql.NullString{String: statement.TransactionType, Valid: true},
 			Amount:      sql.NullInt64{Int64: statement.Amount, Valid: true},
 			Tag:         sql.NullString{String: statement.Tag, Valid: true},
@@ -49,9 +50,28 @@ func CreateStatement(d *db.Queries, description string) error {
 		if err != nil {
 			return err
 		}
+
+		payload := make(map[string]any)
+		payload["transaction_type"] = stmt.TxnType.String
+		payload["amount"] = stmt.Amount.Int64
+		payload["tag"] = stmt.Tag.String
+		payload["description"] = stmt.Description.String
+		payload["created_at"] = fmt.Sprintf("%s", stmt.CreatedAt.Time)
+
+		err = qdrantClient.AddPayload(payload)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func HealthHandler(c echo.Context) error {
+	fmt.Println("health ping")
+	return c.JSON(200, map[string]string{
+		"message": "Health ok",
+	})
 }
 
 func HomeHandler(c echo.Context) error {
@@ -121,13 +141,14 @@ func HomeHandler(c echo.Context) error {
 
 func CreateTransactionAPI(c echo.Context) error {
 	d := c.Get("db").(*db.Queries)
+	vectorDb := c.Get("qdrantClient").(*vectordb.QdrantVectorDB)
 
 	txn := new(CreateTxn)
 	if err := c.Bind(txn); err != nil {
 		fmt.Println(err)
 	}
 
-	result, err := llm.NewOpenAI(txn.Description).Call()
+	result, err := llm.NewOpenAI().Call(txn.Description)
 	if err != nil {
 		fmt.Println("error calling openai ", err)
 	} else {
@@ -137,7 +158,7 @@ func CreateTransactionAPI(c echo.Context) error {
 	// txnType := c.FormValue("")
 	// amount := c.FormValue("")
 	// tag := c.FormValue("")
-	err = CreateStatement(d, txn.Description)
+	err = CreateStatement(d, vectorDb, txn.Description)
 	if err != nil {
 		fmt.Println("err = ", err.Error())
 	}

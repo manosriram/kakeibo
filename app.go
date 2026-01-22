@@ -12,9 +12,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/manosriram/kakeibo/internal/bot"
 	"github.com/manosriram/kakeibo/internal/handlers"
 	"github.com/manosriram/kakeibo/internal/utils"
+	"github.com/manosriram/kakeibo/internal/vectordb"
 	"github.com/manosriram/kakeibo/sqlc/db"
 
 	_ "embed"
@@ -43,10 +43,11 @@ func InitDB(path string) (*db.Queries, error) {
 	return db.New(conn), nil
 }
 
-func InjectDb(db *db.Queries) echo.MiddlewareFunc {
+func InjectDb(db *db.Queries, qdrantClient *vectordb.QdrantVectorDB) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			c.Set("db", db)
+			c.Set("qdrantClient", qdrantClient)
 			return next(c)
 		}
 	}
@@ -55,6 +56,12 @@ func InjectDb(db *db.Queries) echo.MiddlewareFunc {
 func main() {
 	e := echo.New()
 	e.Static("/", "static")
+
+	d, err := vectordb.NewQdrantVectorDB()
+	if err != nil {
+		log.Fatalf("Error initializing qdrant db %v\n", err.Error())
+	}
+	// d.CreateCollection()
 
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"formatDate": utils.FormatDateTime,
@@ -74,14 +81,14 @@ func main() {
 		templates: tmpl,
 	}
 
-	q, err := InitDB("/app/data/kakeibo.db")
+	q, err := InitDB("./kakeibo.db")
 	if err != nil {
 		log.Fatalf("Error starting sqlite db")
 	}
 
-	e.Use(InjectDb(q))
+	e.Use(InjectDb(q, d))
 
-	go bot.StartTelegramBot(q)
+	// go bot.StartTelegramBot(q)
 
 	// Middleware
 	e.Use(middleware.RequestLogger()) // use the default RequestLogger middleware with slog logger
@@ -90,6 +97,7 @@ func main() {
 	e.GET("/", handlers.HomeHandler)
 	e.GET("/transactions", handlers.GetAllTransactionsAPI)
 	e.POST("/api/transaction", handlers.CreateTransactionAPI)
+	e.GET("/api/health", handlers.HealthHandler)
 
 	if err := e.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("failed to start server", "error", err)

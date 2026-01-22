@@ -1,4 +1,4 @@
--- name: CreateStatement :exec
+-- name: CreateStatement :one
 INSERT INTO STATEMENTS(TXN_TYPE, AMOUNT, TAG, DESCRIPTION) VALUES(?, ?, ?, ?) RETURNING *;
 
 -- name: GetStatementsByTag :many

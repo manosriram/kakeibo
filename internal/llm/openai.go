@@ -4,18 +4,20 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
-	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/option"
+	openai "github.com/sashabaranov/go-openai"
 )
 
 type OpenAI struct {
-	ExpenseDescription string
+	Client *openai.Client
 }
 
-func NewOpenAI(description string) OpenAI {
+func NewOpenAI() OpenAI {
+	client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
+
 	return OpenAI{
-		ExpenseDescription: description,
+		Client: client,
 	}
 }
 
@@ -32,25 +34,45 @@ func (o OpenAI) GeneratePrompt() (string, error) {
 	return string(d), nil
 }
 
-func (o OpenAI) Call() (string, error) {
-	client := openai.NewClient(
-		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")), // defaults to os.LookupEnv("OPENAI_API_KEY")
-	)
-
+func (o OpenAI) Call(p string) (string, error) {
 	prompt, err := o.GeneratePrompt()
 	if err != nil {
 		return "", err
 	}
-	prompt = fmt.Sprintf(prompt, o.ExpenseDescription)
-
-	chatCompletion, err := client.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
-		Messages: []openai.ChatCompletionMessageParamUnion{
-			openai.UserMessage(prompt),
+	prompt = fmt.Sprintf(prompt, p)
+	chatCompletion, err := o.Client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT5,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
 		},
-		Model: openai.ChatModelGPT5_2,
-	})
+	)
+
 	if err != nil {
 		panic(err.Error())
 	}
 	return chatCompletion.Choices[0].Message.Content, nil
+}
+
+func (o OpenAI) CreateEmbedding(payload map[string]any) ([]openai.Embedding, error) {
+	var ip strings.Builder
+	for k, v := range payload {
+		ip.WriteString(fmt.Sprintf("%s:%s", k, v))
+	}
+	req := openai.EmbeddingRequest{
+		Model: openai.SmallEmbedding3,
+		Input: ip.String(),
+	}
+	embeddingResponse, err := o.Client.CreateEmbeddings(context.Background(), req)
+	if err != nil {
+		return []openai.Embedding{}, err
+	}
+
+	return embeddingResponse.Data, nil
+
 }
