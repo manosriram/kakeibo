@@ -68,7 +68,6 @@ func CreateStatement(d *db.Queries, qdrantClient *vectordb.QdrantVectorDB, descr
 }
 
 func HealthHandler(c echo.Context) error {
-	fmt.Println("health ping")
 	return c.JSON(200, map[string]string{
 		"message": "Health ok",
 	})
