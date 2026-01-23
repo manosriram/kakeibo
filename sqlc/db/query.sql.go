@@ -10,7 +10,7 @@ import (
 	"database/sql"
 )
 
-const createStatement = `-- name: CreateStatement :one
+const createStatement = `-- name: CreateStatement :exec
 INSERT INTO STATEMENTS(TXN_TYPE, AMOUNT, TAG, DESCRIPTION) VALUES(?, ?, ?, ?) RETURNING id, txn_type, amount, tag, description, created_at, updated_at
 `
 
@@ -21,24 +21,14 @@ type CreateStatementParams struct {
 	Description sql.NullString
 }
 
-func (q *Queries) CreateStatement(ctx context.Context, arg CreateStatementParams) (Statement, error) {
-	row := q.db.QueryRowContext(ctx, createStatement,
+func (q *Queries) CreateStatement(ctx context.Context, arg CreateStatementParams) error {
+	_, err := q.db.ExecContext(ctx, createStatement,
 		arg.TxnType,
 		arg.Amount,
 		arg.Tag,
 		arg.Description,
 	)
-	var i Statement
-	err := row.Scan(
-		&i.ID,
-		&i.TxnType,
-		&i.Amount,
-		&i.Tag,
-		&i.Description,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+	return err
 }
 
 const getAllStatements = `-- name: GetAllStatements :many
