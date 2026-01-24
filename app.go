@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -16,6 +18,7 @@ import (
 	"github.com/manosriram/kakeibo/internal/handlers"
 	"github.com/manosriram/kakeibo/internal/utils"
 	"github.com/manosriram/kakeibo/sqlc/db"
+	"github.com/qdrant/go-client/qdrant"
 
 	_ "embed"
 
@@ -52,9 +55,58 @@ func InjectDb(db *db.Queries) echo.MiddlewareFunc {
 	}
 }
 
+func importSqliteToCsv(d *db.Queries) error {
+	statements, err := d.GetAllStatements(context.Background())
+	fmt.Println(statements)
+	if err != nil {
+		return err
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(wd+"/spends.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	for _, stmt := range statements {
+		_, err = fmt.Fprintf(f, "%s,%s,INR %v,%s,%s\n", stmt.Tag.String, stmt.TxnType.String, stmt.Amount.Int64, stmt.Description.String, stmt.CreatedAt.Time)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	e := echo.New()
 	e.Static("/", "static")
+
+	qdrantClient, err := qdrant.NewClient(&qdrant.Config{
+		Host: "localhost",
+		Port: 6334,
+	})
+
+	collectionExists, err := qdrantClient.CollectionExists(context.Background(), "kakeibo_knowledge_base")
+	if err != nil {
+		log.Fatalf("Error checking qdrant collection status: %s\n", err.Error())
+	}
+	defer qdrantClient.Close()
+	if !collectionExists {
+		err = qdrantClient.CreateCollection(context.Background(), &qdrant.CreateCollection{
+			CollectionName: "kakeibo_knowledge_base",
+			VectorsConfig: qdrant.NewVectorsConfig(&qdrant.VectorParams{
+				Size:     1536, // OpenAI embedding dimension
+				Distance: qdrant.Distance_Cosine,
+			}),
+		})
+		if err != nil {
+			log.Fatalf("Error creating qdrant collection: %s\n", err.Error())
+		}
+	}
 
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"formatDate": utils.FormatDateTime,
@@ -75,8 +127,13 @@ func main() {
 	}
 
 	q, err := InitDB("/app/data/kakeibo.db")
+	// q, err := InitDB("./kakeibo.db")
 	if err != nil {
 		log.Fatalf("Error starting sqlite db")
+	}
+
+	if os.Getenv("KAKEIBO_SYNC_SQLITE_TO_CSV") == "1" {
+		go importSqliteToCsv(q)
 	}
 
 	e.Use(InjectDb(q))
@@ -90,6 +147,7 @@ func main() {
 	e.GET("/", handlers.HomeHandler)
 	e.GET("/transactions", handlers.GetAllTransactionsAPI)
 	e.POST("/api/transaction", handlers.CreateTransactionAPI)
+	e.GET("/api/insights", handlers.QueryRagAPI)
 
 	if err := e.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("failed to start server", "error", err)

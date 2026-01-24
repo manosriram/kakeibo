@@ -102,6 +102,19 @@
             <div>SAVINGS: <span>{{ .savings }} ({{.savingsPercentage}}%)</span></div>
         </div>
 
+				<section style="margin-top: 20px; border: 1px solid #666; padding: 15px;">
+					<div class="form-group" style="display: flex; gap: 10px; align-items: flex-end;">
+						<div style="flex-grow: 1;">
+							<label for="insightQuery">AI_INSIGHTS_QUERY:</label>
+							<input id="insightQuery" type="text" placeholder="How much did I spend on coffee last week?" autocomplete="off">
+						</div>
+						<button class="btn btn-default" type="button" id="askBtn">QUERY_LLM</button>
+					</div>
+					<div id="insightResult" style="margin-top: 15px; font-family: monospace; min-height: 20px; border-left: 3px solid #666; padding-left: 10px; display: none;">
+						<span style="color: #666;">> </span><span id="insightText"></span>
+					</div>
+				</section>
+
         <section>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h3 style="margin: 0;">TRANSACTION_LOG</h3>
@@ -257,6 +270,45 @@
 
         document.getElementById('prevBtn').addEventListener('click', () => window.location.href = "/?page={{.prev}}");
         document.getElementById('nextBtn').addEventListener('click', () => window.location.href = "/?page={{.next}}");
+
+
+				// Insights Logic
+				const insightInput = document.getElementById('insightQuery');
+				const askBtn = document.getElementById('askBtn');
+				const insightResult = document.getElementById('insightResult');
+				const insightText = document.getElementById('insightText');
+
+				askBtn.addEventListener('click', async () => {
+					const query = insightInput.value.trim();
+					if (!query) return;
+
+					// UI Feedback
+					askBtn.innerText = 'PROCESSING...';
+					insightResult.style.display = 'block';
+					insightText.innerText = 'Fetching insights...';
+					insightText.style.color = 'inherit';
+
+					try {
+						const response = await fetch(`/api/insights?query=${encodeURIComponent(query)}`);
+						console.log(response)
+
+						if (!response.ok) throw new Error('API_UNAVAILABLE');
+
+						const data = await response.json();
+
+						insightText.innerText = data.llmResponse || "No data received.";
+					} catch (err) {
+						insightText.innerText = '[ERROR_FETCHING_INSIGHTS]';
+						insightText.style.color = '#e74c3c';
+					} finally {
+						askBtn.innerText = 'QUERY_LLM';
+					}
+				});
+
+				// Optional: Allow pressing "Enter" in the insight bar
+				insightInput.addEventListener('keypress', (e) => {
+					if (e.key === 'Enter') askBtn.click();
+				});
     </script>
 </body>
 </html>

@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/manosriram/kakeibo/internal/llm"
+	"github.com/manosriram/kakeibo/internal/rag"
 	"github.com/manosriram/kakeibo/sqlc/db"
 )
 
@@ -26,6 +28,16 @@ type CreateTxn struct {
 }
 
 func CreateStatement(d *db.Queries, description string) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(wd+"/spends.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
 	result, err := llm.NewOpenAI(description).Call()
 	if err != nil {
 		fmt.Println("error calling openai ", err)
@@ -40,12 +52,17 @@ func CreateStatement(d *db.Queries, description string) error {
 	fmt.Println("statements = ", statements)
 
 	for _, statement := range statements {
-		err = d.CreateStatement(context.Background(), db.CreateStatementParams{
+		stmt, err := d.CreateStatement(context.Background(), db.CreateStatementParams{
 			TxnType:     sql.NullString{String: statement.TransactionType, Valid: true},
 			Amount:      sql.NullInt64{Int64: statement.Amount, Valid: true},
 			Tag:         sql.NullString{String: statement.Tag, Valid: true},
 			Description: sql.NullString{String: statement.Description, Valid: true},
 		})
+		if err != nil {
+			return err
+		}
+
+		_, err = fmt.Fprintf(f, "%s,%s,INR %v,%s,%s\n", stmt.Tag.String, stmt.TxnType.String, stmt.Amount.Int64, stmt.Description.String, stmt.CreatedAt.Time)
 		if err != nil {
 			return err
 		}
@@ -123,6 +140,27 @@ func HomeHandler(c echo.Context) error {
 		"totalEntries":      count,
 		"hasNextPage":       p < int(totalPages)-1,
 	})
+}
+
+func QueryRagAPI(c echo.Context) error {
+	query := c.QueryParam("query")
+	r := rag.NewRAG()
+	if query != "" {
+		answer, err := r.Query(query)
+		if err == nil {
+			return c.JSON(200, map[string]any{
+				"llmResponse": answer,
+			})
+		} else {
+			return c.JSON(400, map[string]any{
+				"error": err.Error(),
+			})
+		}
+	} else {
+		return c.JSON(400, map[string]any{
+			"message": "Query should not be empty",
+		})
+	}
 }
 
 func CreateTransactionAPI(c echo.Context) error {
