@@ -147,7 +147,7 @@ func main() {
 	e.GET("/", handlers.HomeHandler)
 	e.GET("/transactions", handlers.GetAllTransactionsAPI)
 	e.POST("/api/transaction", handlers.CreateTransactionAPI)
-	e.POST("/api/health", handlers.HealthAPI)
+	e.GET("/api/health", handlers.HealthAPI)
 	e.GET("/api/insights", handlers.QueryRagAPI)
 
 	if err := e.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
