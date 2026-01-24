@@ -163,6 +163,12 @@ func QueryRagAPI(c echo.Context) error {
 	}
 }
 
+func HealthAPI(c echo.Context) error {
+	return c.JSON(200, map[string]any{
+		"health": "ok",
+	})
+}
+
 func CreateTransactionAPI(c echo.Context) error {
 	d := c.Get("db").(*db.Queries)
 
