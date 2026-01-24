@@ -65,7 +65,7 @@ func (r *RAG) Query(query string) (string, error) {
 		return "", err
 	}
 
-	qdrantURL, err := url.Parse("http://qdrant_server:6334")
+	qdrantURL, err := url.Parse("http://qdrant_server:6333")
 	if err != nil {
 		log.Fatal(err)
 	}
