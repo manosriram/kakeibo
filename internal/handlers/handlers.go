@@ -28,10 +28,10 @@ type CreateTxn struct {
 }
 
 func CreateStatement(d *db.Queries, description string) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
+	// wd, err := os.Getwd()
+	// if err != nil {
+	// return err
+	// }
 	f, err := os.OpenFile("/app/data/spends.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
