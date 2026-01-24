@@ -157,7 +157,7 @@ func (q *Queries) GetCurrentMonthDebit(ctx context.Context) (sql.NullFloat64, er
 }
 
 const getStatementsByCategory = `-- name: GetStatementsByCategory :many
-SELECT SUM(AMOUNT), TAG, TXN_TYPE FROM STATEMENTS GROUP BY TAG ORDER BY SUM(AMOUNT) DESC
+SELECT SUM(AMOUNT), TAG, TXN_TYPE FROM STATEMENTS GROUP BY TAG ORDER BY CREATED_AT DESC
 `
 
 type GetStatementsByCategoryRow struct {
@@ -190,7 +190,7 @@ func (q *Queries) GetStatementsByCategory(ctx context.Context) ([]GetStatementsB
 }
 
 const getStatementsByTag = `-- name: GetStatementsByTag :many
-SELECT id, txn_type, amount, tag, description, created_at, updated_at FROM STATEMENTS WHERE TAG = ?
+SELECT id, txn_type, amount, tag, description, created_at, updated_at FROM STATEMENTS WHERE TAG = ? ORDER BY CREATED_AT DESC
 `
 
 func (q *Queries) GetStatementsByTag(ctx context.Context, tag sql.NullString) ([]Statement, error) {

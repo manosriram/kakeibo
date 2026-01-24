@@ -87,8 +87,8 @@ func StartTelegramBot(d *db.Queries) {
 	}
 
 	t := NewTelegramBot(d)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/track", bot.MatchTypePrefix, t.HandleMessage)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/summary", bot.MatchTypePrefix, t.HandleLatestStatements)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypePrefix, t.HandleMessage)
 
 	b.Start(ctx)
 }
