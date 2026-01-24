@@ -15,6 +15,7 @@ services:
       retries: 3
       start_period: 30s
     restart: always
+
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant_server
