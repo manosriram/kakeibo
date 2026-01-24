@@ -87,7 +87,7 @@ func main() {
 
 	qdrantClient, err := qdrant.NewClient(&qdrant.Config{
 		Host: "qdrant_server",
-		Port: 6333,
+		Port: 6334,
 	})
 
 	collectionExists, err := qdrantClient.CollectionExists(context.Background(), "kakeibo_knowledge_base")
