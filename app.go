@@ -62,11 +62,11 @@ func importSqliteToCsv(d *db.Queries) error {
 		return err
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	f, err := os.OpenFile(wd+"/spends.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	// wd, err := os.Getwd()
+	// if err != nil {
+	// return err
+	// }
+	f, err := os.OpenFile("/app/data/spends.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
