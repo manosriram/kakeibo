@@ -86,7 +86,7 @@ func main() {
 	e.Static("/", "static")
 
 	qdrantClient, err := qdrant.NewClient(&qdrant.Config{
-		Host: "qdrant_server",
+		Host: os.Getenv("QDRANT_URL"),
 		Port: 6334,
 	})
 
