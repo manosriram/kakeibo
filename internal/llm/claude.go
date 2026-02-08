@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
 type Claude struct {
@@ -34,9 +33,7 @@ func (c Claude) GeneratePrompt() (string, error) {
 }
 
 func (c Claude) Call() (string, error) {
-	client := anthropic.NewClient(
-		option.WithAPIKey(os.Getenv("ANTHROPIC_API_KEY")),
-	)
+	client := anthropic.NewClient()
 
 	prompt, err := c.GeneratePrompt()
 	if err != nil {
@@ -45,19 +42,11 @@ func (c Claude) Call() (string, error) {
 	prompt = fmt.Sprintf(prompt, c.ExpenseDescription)
 
 	message, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
-		Model:     anthropic.F(anthropic.ModelClaude3_5SonnetLatest),
-		MaxTokens: anthropic.F(int64(1024)),
-		Messages: anthropic.F([]anthropic.MessageParam{
-			{
-				Role: anthropic.F(anthropic.MessageParamRoleUser),
-				Content: anthropic.F([]anthropic.ContentBlockParamUnion{
-					anthropic.TextBlockParam{
-						Type: anthropic.F(anthropic.TextBlockParamTypeText),
-						Text: anthropic.F(prompt),
-					},
-				}),
-			},
-		}),
+		Model:     "claude-sonnet-4-20250514",
+		MaxTokens: 1024,
+		Messages: []anthropic.MessageParam{
+			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
+		},
 	})
 	if err != nil {
 		return "", err
@@ -65,7 +54,7 @@ func (c Claude) Call() (string, error) {
 
 	if len(message.Content) > 0 {
 		block := message.Content[0]
-		if block.Type == anthropic.ContentBlockTypeText {
+		if block.Type == "text" {
 			return block.Text, nil
 		}
 	}
