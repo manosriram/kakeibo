@@ -66,7 +66,7 @@ func importSqliteToCsv(d *db.Queries) error {
 	// if err != nil {
 	// return err
 	// }
-	f, err := os.OpenFile("/app/data/spends.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile("/data/spends.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func main() {
 		templates: tmpl,
 	}
 
-	q, err := InitDB("/app/data/kakeibo.db")
+	q, err := InitDB("/data/kakeibo.db")
 	// q, err := InitDB("./kakeibo.db")
 	if err != nil {
 		log.Fatalf("Error starting sqlite db")
