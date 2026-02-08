@@ -45,19 +45,28 @@ func (c Claude) Call() (string, error) {
 	prompt = fmt.Sprintf(prompt, c.ExpenseDescription)
 
 	message, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaude3_5Sonnet20241022,
-		MaxTokens: 1024,
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
-		},
+		Model:     anthropic.F(anthropic.ModelClaude3_5SonnetLatest),
+		MaxTokens: anthropic.F(int64(1024)),
+		Messages: anthropic.F([]anthropic.MessageParam{
+			{
+				Role: anthropic.F(anthropic.MessageParamRoleUser),
+				Content: anthropic.F([]anthropic.ContentBlockParamUnion{
+					anthropic.TextBlockParam{
+						Type: anthropic.F(anthropic.TextBlockParamTypeText),
+						Text: anthropic.F(prompt),
+					},
+				}),
+			},
+		}),
 	})
 	if err != nil {
 		return "", err
 	}
 
 	if len(message.Content) > 0 {
-		if textBlock, ok := message.Content[0].(anthropic.TextBlock); ok {
-			return textBlock.Text, nil
+		block := message.Content[0]
+		if block.Type == anthropic.ContentBlockTypeText {
+			return block.Text, nil
 		}
 	}
 
