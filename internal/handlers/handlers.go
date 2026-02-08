@@ -38,9 +38,9 @@ func CreateStatement(d *db.Queries, description string) error {
 	}
 	defer f.Close()
 
-	result, err := llm.NewOpenAI(description).Call()
+	result, err := llm.NewClaude(description).Call()
 	if err != nil {
-		fmt.Println("error calling openai ", err)
+		fmt.Println("error calling claude ", err)
 	} else {
 	}
 
@@ -177,9 +177,9 @@ func CreateTransactionAPI(c echo.Context) error {
 		fmt.Println(err)
 	}
 
-	result, err := llm.NewOpenAI(txn.Description).Call()
+	result, err := llm.NewClaude(txn.Description).Call()
 	if err != nil {
-		fmt.Println("error calling openai ", err)
+		fmt.Println("error calling claude ", err)
 	} else {
 		fmt.Println("res = ", result)
 	}
