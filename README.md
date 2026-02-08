@@ -9,24 +9,48 @@
 
 kakeibo is a minimalist expense tracker designed to help you manage your finances simply and effectively. The name comes from the Japanese art of saving money through mindful budgeting.
 
-<img width="984" height="767" alt="Screenshot 2026-01-20 at 2 26 06 AM" src="https://github.com/user-attachments/assets/e1f733aa-ce5a-4be3-a0d2-bd4cbb1c2e98" />
+<img width="899" height="766" alt="Screenshot 2026-01-25 at 12 46 22 PM" src="https://github.com/user-attachments/assets/8f45449e-eff4-4650-b6c7-b2977e5bf721" />
 
 ## Installation
 
 via docker-compose
 
 ```yaml
-
 services:
-  app:
+  kakeibo:
     container_name: kakeibo
     image: ghcr.io/manosriram/kakeibo:latest
-    volumes:
-      - ./data:/app/data
+    # volumes:
+      # - ./data:/app/data
     ports:
-      - "8080:8080"
+      - "5464:8080"
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - kakeibo_network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_server
+    restart: always
+    ports:
+      - "6333:6333" # HTTP API
+      - "6334:6334" # gRPC API
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    networks:
+      - kakeibo_network
+
+networks:
+  kakeibo_network:
+    driver: bridge
 ```
 
 ## Usage
