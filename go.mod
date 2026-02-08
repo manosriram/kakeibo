@@ -3,6 +3,7 @@ module github.com/manosriram/kakeibo
 go 1.25.5
 
 require (
+	github.com/anthropics/anthropic-sdk-go v1.22.0
 	github.com/go-telegram/bot v1.17.0
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/openai/openai-go/v3 v3.16.0

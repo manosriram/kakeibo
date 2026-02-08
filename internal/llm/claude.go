@@ -42,7 +42,7 @@ func (c Claude) Call() (string, error) {
 	prompt = fmt.Sprintf(prompt, c.ExpenseDescription)
 
 	message, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
-		Model:     "claude-sonnet-4-20250514",
+		Model:     "claude-opus-4-6",
 		MaxTokens: 1024,
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
