@@ -69,14 +69,15 @@ func (r *RAG) Query(query string) (string, error) {
 		return "", err
 	}
 
-	qdrantURL, err := url.Parse("http://localhost:6333")
+	// qdrantURL, err := url.Parse("http://qdrant_server:6333")
+	qdrantURL, err := url.Parse(fmt.Sprintf("http://%s:%s", os.Getenv("QDRANT_HOST"), os.Getenv("QDRANT_PORT")))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	store, err := qdrant.New(
 		qdrant.WithURL(*qdrantURL),
-		qdrant.WithCollectionName("kakeibo-knowledge-base"),
+		qdrant.WithCollectionName(os.Getenv("QDRANT_COLLECTION_NAME")),
 		qdrant.WithEmbedder(embedder),
 	)
 	if err != nil {

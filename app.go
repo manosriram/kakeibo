@@ -63,10 +63,6 @@ func importSqliteToCsv(d *db.Queries) error {
 		return err
 	}
 
-	// wd, err := os.Getwd()
-	// if err != nil {
-	// return err
-	// }
 	f, err := os.OpenFile("/data/spends.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -97,7 +93,7 @@ func ensureQdrantCollection() error {
 	}
 
 	ctx := context.Background()
-	collectionName := "kakeibo-knowledge-base"
+	collectionName := os.Getenv("QDRANT_COLLECTION_NAME")
 
 	exists, err := client.CollectionExists(ctx, collectionName)
 	if err != nil {
