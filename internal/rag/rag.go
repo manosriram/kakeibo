@@ -118,7 +118,7 @@ Answer:`, c, query)
 }
 
 func (r *RAG) loadDocuments() ([]schema.Document, error) {
-	file, err := os.Open("/app/data/spends.csv")
+	file, err := os.Open("/data/spends.csv")
 	if err != nil {
 		return nil, err
 	}
