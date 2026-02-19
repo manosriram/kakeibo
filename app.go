@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/manosriram/kakeibo/internal/bot"
@@ -81,32 +82,56 @@ func importSqliteToCsv(d *db.Queries) error {
 	return nil
 }
 
-func main() {
-	e := echo.New()
-	e.Static("/", "static")
+func ensureQdrantCollection() error {
+	qdrantHost := os.Getenv("QDRANT_HOST")
+	if qdrantHost == "" {
+		qdrantHost = "localhost"
+	}
 
-	qdrantClient, err := qdrant.NewClient(&qdrant.Config{
-		Host: os.Getenv("QDRANT_URL"),
+	client, err := qdrant.NewClient(&qdrant.Config{
+		Host: qdrantHost,
 		Port: 6334,
 	})
-
-	collectionExists, err := qdrantClient.CollectionExists(context.Background(), "kakeibo_knowledge_base")
 	if err != nil {
-		log.Fatalf("Error checking qdrant collection status: %s\n", err.Error())
+		return err
 	}
-	defer qdrantClient.Close()
-	if !collectionExists {
-		err = qdrantClient.CreateCollection(context.Background(), &qdrant.CreateCollection{
-			CollectionName: "kakeibo_knowledge_base",
+
+	ctx := context.Background()
+	collectionName := "kakeibo-knowledge-base"
+
+	exists, err := client.CollectionExists(ctx, collectionName)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		err = client.CreateCollection(ctx, &qdrant.CreateCollection{
+			CollectionName: collectionName,
 			VectorsConfig: qdrant.NewVectorsConfig(&qdrant.VectorParams{
-				Size:     1536, // OpenAI embedding dimension
+				Size:     1536,
 				Distance: qdrant.Distance_Cosine,
 			}),
 		})
 		if err != nil {
-			log.Fatalf("Error creating qdrant collection: %s\n", err.Error())
+			return err
 		}
+		log.Printf("Created collection: %s", collectionName)
+	} else {
+		log.Printf("Collection already exists: %s", collectionName)
 	}
+
+	return nil
+}
+
+func main() {
+	godotenv.Load()
+
+	if err := ensureQdrantCollection(); err != nil {
+		log.Printf("Warning: Failed to ensure qdrant collection: %v", err)
+	}
+
+	e := echo.New()
+	e.Static("/", "static")
 
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"formatDate": utils.FormatDateTime,
@@ -127,7 +152,6 @@ func main() {
 	}
 
 	q, err := InitDB("/data/kakeibo.db")
-	// q, err := InitDB("./kakeibo.db")
 	if err != nil {
 		log.Fatalf("Error starting sqlite db")
 	}

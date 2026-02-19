@@ -34,7 +34,8 @@ func (o OpenAI) GeneratePrompt() (string, error) {
 
 func (o OpenAI) Call() (string, error) {
 	client := openai.NewClient(
-		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")), // defaults to os.LookupEnv("OPENAI_API_KEY")
+		option.WithAPIKey(os.Getenv("OPENROUTER_API_KEY")),
+		option.WithBaseURL("https://openrouter.ai/api/v1"),
 	)
 
 	prompt, err := o.GeneratePrompt()
@@ -47,7 +48,7 @@ func (o OpenAI) Call() (string, error) {
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.UserMessage(prompt),
 		},
-		Model: openai.ChatModelGPT5_2,
+		Model: openai.ChatModel("openai/gpt-4.2"),
 	})
 	if err != nil {
 		panic(err.Error())

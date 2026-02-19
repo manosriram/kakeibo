@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
 type Claude struct {
@@ -33,7 +34,10 @@ func (c Claude) GeneratePrompt() (string, error) {
 }
 
 func (c Claude) Call() (string, error) {
-	client := anthropic.NewClient()
+	client := anthropic.NewClient(
+		option.WithAPIKey(os.Getenv("OPENROUTER_API_KEY")),
+		option.WithBaseURL("https://openrouter.ai/api"),
+	)
 
 	prompt, err := c.GeneratePrompt()
 	if err != nil {
@@ -42,7 +46,7 @@ func (c Claude) Call() (string, error) {
 	prompt = fmt.Sprintf(prompt, c.ExpenseDescription)
 
 	message, err := client.Messages.New(context.Background(), anthropic.MessageNewParams{
-		Model:     "claude-opus-4-6",
+		Model:     anthropic.Model("anthropic/claude-4-opus-20250514"),
 		MaxTokens: 1024,
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),

@@ -53,7 +53,11 @@ func (r *RAG) Query(query string) (string, error) {
 		}
 	}
 
-	o, err := openai.New(openai.WithEmbeddingModel("text-embedding-3-small"))
+	o, err := openai.New(
+		openai.WithToken(os.Getenv("OPENROUTER_API_KEY")),
+		openai.WithBaseURL("https://openrouter.ai/api/v1"),
+		openai.WithEmbeddingModel("text-embedding-3-small"),
+	)
 	if err != nil {
 		fmt.Println("Error ", err.Error())
 		return "", err
@@ -65,14 +69,14 @@ func (r *RAG) Query(query string) (string, error) {
 		return "", err
 	}
 
-	qdrantURL, err := url.Parse("http://qdrant_server:6333")
+	qdrantURL, err := url.Parse("http://localhost:6333")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	store, err := qdrant.New(
 		qdrant.WithURL(*qdrantURL),
-		qdrant.WithCollectionName("kakeibo_knowledge_base"),
+		qdrant.WithCollectionName("kakeibo-knowledge-base"),
 		qdrant.WithEmbedder(embedder),
 	)
 	if err != nil {
@@ -94,7 +98,10 @@ func (r *RAG) Query(query string) (string, error) {
 
 	c := r.buildContext(relevantDocs)
 
-	llm, err := openai.New()
+	llm, err := openai.New(
+		openai.WithToken(os.Getenv("OPENROUTER_API_KEY")),
+		openai.WithBaseURL("https://openrouter.ai/api/v1"),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
